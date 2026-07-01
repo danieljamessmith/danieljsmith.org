@@ -6,7 +6,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Newsreader', 'Georgia', 'Cambria', 'serif'],
+        display: ['Roboto', 'sans-serif'],
       },
     },
   },
