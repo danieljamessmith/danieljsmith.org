@@ -4,10 +4,10 @@ import Layout from '~/layouts/Layout.astro';
 const sites = [
   {
     title: 'Resources',
-    description: 'A-level Further Maths Questions by Topic \n & TMUA Practice Papers',
+    description: 'Free A-level Further Maths questions by topic, worked solutions and TMUA practice papers.',
     href: 'https://resources.danieljsmith.org',
     subdomain: 'resources.danieljsmith.org',
-    theme: 'blue',
+    theme: 'resources',
   },
   {
     title: 'Tuition',
@@ -59,81 +59,13 @@ const socialLinks = [
 
       <!-- Site Cards - Styled to preview their destinations -->
       <section class="grid md:grid-cols-2 gap-6 max-w-4xl w-full mb-16 items-stretch">
-        {sites.map((site, index) => (
-          <a
-            href={site.href}
-            class:list={[
-              "group relative block rounded-2xl overflow-hidden transition-all duration-300 transform-gpu hover:-translate-y-1 hover:shadow-2xl h-full",
-              site.theme === 'green' && "shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20",
-              site.theme === 'blue' && "shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20",
-              site.theme === 'amber' && "shadow-lg shadow-amber-500/10 hover:shadow-amber-500/20",
-              // Center the third card (Blog) under the first two on desktop
-              index === 2 && "md:col-span-2 md:mx-auto md:w-[calc(50%-0.75rem)]",
-            ]}
-          >
-            {/* Card background matching destination site */}
-            <div class:list={[
-              "absolute inset-0",
-              site.theme === 'green' && "bg-gradient-to-br from-emerald-50 via-emerald-100/80 to-teal-100",
-              site.theme === 'blue' && "bg-gradient-to-br from-slate-600 via-slate-700 to-indigo-800",
-              site.theme === 'amber' && "bg-gradient-to-br from-amber-50 via-amber-100/80 to-orange-100",
-            ]} />
-            
-            {/* Decorative gradient orb */}
-            <div class:list={[
-              "absolute -top-10 -right-10 w-40 h-40 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-opacity",
-              site.theme === 'green' && "bg-gradient-to-br from-emerald-400 to-teal-400",
-              site.theme === 'blue' && "bg-gradient-to-br from-blue-400 to-indigo-400",
-              site.theme === 'amber' && "bg-gradient-to-br from-amber-400 to-orange-400",
-            ]} />
-            
-            {/* Card content */}
-            <div class:list={[
-              "relative p-8 rounded-2xl flex flex-col h-full",
-              site.theme === 'green' && "border border-emerald-200/50",
-              site.theme === 'blue' && "",
-              site.theme === 'amber' && "border border-amber-200/50",
-            ]}>
-              <h2 class:list={[
-                "text-2xl font-bold mb-3 transition-colors",
-                site.theme === 'green' && "text-gray-900 group-hover:text-emerald-700",
-                site.theme === 'blue' && "text-white group-hover:text-blue-300",
-                site.theme === 'amber' && "text-gray-900 group-hover:text-amber-700",
-              ]}>
-                {site.title}
-              </h2>
-              <p class:list={[
-                "mb-6 leading-relaxed flex-1",
-                site.theme === 'green' && "text-gray-600",
-                site.theme === 'blue' && "text-slate-300",
-                site.theme === 'amber' && "text-gray-600",
-              ]}>
-                {site.description}
-              </p>
-              
-              {/* Bottom row with arrow and subdomain */}
-              <div class="flex items-end justify-between">
-                {/* Arrow indicator */}
-                <div class:list={[
-                  "inline-flex items-center gap-2 text-sm font-medium transition-all group-hover:gap-3",
-                  site.theme === 'green' && "text-emerald-600",
-                  site.theme === 'blue' && "text-blue-400",
-                  site.theme === 'amber' && "text-amber-600",
-                ]}>
-                  <span>Visit site</span>
-                  <span class="transition-transform group-hover:translate-x-1">→</span>
-                </div>
-                
-                {/* Subdomain URL */}
-                <span class:list={[
-                  "text-sm font-mono opacity-70 group-hover:opacity-100 transition-opacity",
-                  site.theme === 'green' && "text-emerald-700",
-                  site.theme === 'blue' && "text-blue-300",
-                  site.theme === 'amber' && "text-amber-700",
-                ]}>
-                  {site.subdomain}
-                </span>
-              </div>
+        {sites.map((site) => (
+          <a href={site.href} class:list={['site-card', `site-card--${site.theme}`]}>
+            <h2>{site.title}</h2>
+            <p class="card-description">{site.description}</p>
+            <div class="card-footer">
+              <span class="card-cta">Explore {site.title.toLowerCase()} <span aria-hidden="true">&rarr;</span></span>
+              <span class="card-domain">{site.subdomain}</span>
             </div>
           </a>
         ))}
@@ -173,3 +105,45 @@ const socialLinks = [
     </footer>
   </div>
 </Layout>
+
+<style>
+  .site-card {
+    --card-accent: #763b43;
+    --card-surface: #faf9f6;
+    --card-hover: #f0eee8;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 270px;
+    height: 100%;
+    padding: 30px 32px 26px;
+    border: 1px solid #d8d5cd;
+    border-top: 3px solid var(--card-accent);
+    border-radius: 8px;
+    background: var(--card-surface);
+    color: #252a30;
+    font-family: Arial, Helvetica, sans-serif;
+    text-decoration: none;
+    box-shadow: 0 2px 8px #252a3006;
+    transition: background-color 180ms, border-color 180ms;
+  }
+  .site-card--green { --card-accent: #286653; --card-surface: #f6f9f6; --card-hover: #ecf2ed; }
+  .site-card:hover { background: var(--card-hover); border-color: var(--card-accent); }
+  .site-card:focus-visible { outline: 3px solid var(--card-accent); outline-offset: 4px; }
+  .site-card h2 {
+    margin: 0 0 14px;
+    font: 400 32px/1.15 Georgia, Cambria, serif;
+    letter-spacing: -.02em;
+  }
+  .card-description { margin: 0 0 26px; color: #60656a; font-size: 15px; line-height: 1.6; }
+  .card-footer { margin-top: auto; border-top: 1px solid #d8d5cd; padding-top: 17px; }
+  .card-cta { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--card-accent); font-size: 14px; font-weight: 600; }
+  .card-cta > span { font-size: 20px; line-height: 16px; }
+  .card-domain { display: block; margin-top: 12px; color: #60656a; font-size: 12px; overflow-wrap: anywhere; }
+  @media (max-width: 480px) {
+    .site-card { padding: 25px 24px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .site-card { transition: none; }
+  }
+</style>
