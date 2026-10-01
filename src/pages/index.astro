@@ -60,7 +60,13 @@ const socialLinks = [
       <!-- Site Cards - Styled to preview their destinations -->
       <section class="grid md:grid-cols-2 gap-6 max-w-4xl w-full mb-16 items-stretch">
         {sites.map((site) => (
-          <a href={site.href} class:list={['site-card', `site-card--${site.theme}`]}>
+          <a
+            href={site.href}
+            class:list={['site-card', `site-card--${site.theme}`]}
+            data-umami-event="site-click"
+            data-umami-event-target={site.title.toLowerCase()}
+            data-forward-utm
+          >
             <h2>{site.title}</h2>
             <p class="card-description">{site.description}</p>
             <div class="card-footer">
@@ -105,6 +111,23 @@ const socialLinks = [
     </footer>
   </div>
 </Layout>
+
+<script>
+  // Carry an arriving visit's utm_* tags onto the site cards, so each
+  // destination's own analytics still see where the visit started, and tag
+  // the card click event with the campaign.
+  const incoming = new URLSearchParams(window.location.search);
+  const utm = [...incoming].filter(([key]) => key.startsWith('utm_'));
+  if (utm.length > 0) {
+    const campaign = incoming.get('utm_campaign');
+    for (const card of document.querySelectorAll<HTMLAnchorElement>('a[data-forward-utm]')) {
+      const url = new URL(card.href);
+      for (const [key, value] of utm) url.searchParams.set(key, value);
+      card.href = url.toString();
+      if (campaign) card.dataset.umamiEventCampaign = campaign;
+    }
+  }
+</script>
 
 <style>
   .site-card {
