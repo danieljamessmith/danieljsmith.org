@@ -1,0 +1,159 @@
+/* The editorial system shared with the resources and tuition sites: paper,
+   Georgia headings over Arial text, fine rules and 2px corners. The two
+   site accents (wine for resources, forest for tuition) mark everything
+   that leads to that site. */
+:root {
+  color-scheme: light;
+  --surface: 250 249 246;
+  --surface-raised: 255 254 251;
+  --surface-overlay: 240 238 232;
+  --ink: 37 42 48;
+  --muted: 96 101 106;
+  --rule: 216 213 205;
+  --rule-strong: 170 166 158;
+  --resources: 118 59 67;
+  --resources-tint: 241 232 231;
+  --tuition: 36 84 66;
+  --tuition-tint: 234 240 228;
+
+  --page-max: 1120px;
+  --gutter: 20px;
+  --serif: Georgia, Cambria, 'Times New Roman', serif;
+}
+@media (min-width: 768px) {
+  :root { --gutter: clamp(28px, 5vw, 64px); }
+}
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0;
+  background: rgb(var(--surface));
+  color: rgb(var(--ink));
+  line-height: 1.6;
+}
+main { flex: 1; }
+a, button { -webkit-tap-highlight-color: transparent; }
+a { text-underline-offset: .2em; }
+a:focus-visible, button:focus-visible { outline: 3px solid rgb(var(--ink)); outline-offset: 3px; }
+main:focus { outline: none; }
+::selection { background: rgb(var(--resources-tint)); }
+.skip-link { position: fixed; top: -5rem; left: 1rem; z-index: 100; padding: .75rem 1rem; background: rgb(var(--surface-raised)); color: rgb(var(--ink)); border: 1px solid; }
+.skip-link:focus { top: 1rem; }
+
+/* One container for header, content and footer; the safe-area insets keep
+   text clear of notches on landscape phones. */
+.page-container {
+  width: 100%;
+  max-width: calc(var(--page-max) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+
+.eyebrow { color: rgb(var(--muted)); font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
+
+/* ---------- Header ---------- */
+/* The top rule is split between the two sites' accents. */
+.site-header { border-bottom: 1px solid rgb(var(--rule)); background: rgb(var(--surface)); }
+.site-header::before { content: ''; display: block; height: 3px; background: linear-gradient(90deg, rgb(var(--resources)) 50%, rgb(var(--tuition)) 50%); }
+.header-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; }
+.site-name { font-family: var(--serif); font-size: clamp(17px, 4.6vw, 20px); line-height: 1.2; white-space: nowrap; }
+.header-links { display: flex; align-items: center; gap: 4px; }
+.header-site { display: none; padding: 8px 10px; font-size: 14px; color: rgb(var(--muted)); white-space: nowrap; }
+.header-divider { display: none; width: 1px; height: 20px; margin-inline: 8px; background: rgb(var(--rule)); }
+.icon-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 2px; color: rgb(var(--muted)); }
+.icon-link svg { width: 18px; height: 18px; }
+@media (hover: hover) {
+  .header-site:hover { color: rgb(var(--ink)); text-decoration: underline; }
+  .icon-link:hover { color: rgb(var(--ink)); background: rgb(var(--surface-overlay)); }
+}
+@media (min-width: 640px) {
+  .header-site, .header-divider { display: inline-block; }
+  .icon-link { width: 36px; height: 36px; }
+}
+@media (min-width: 640px) and (pointer: coarse) {
+  .icon-link { width: 44px; height: 44px; }
+}
+
+/* ---------- Home ---------- */
+/* Phones and tablets read the name, the sites, then the figure; wide
+   screens set the figure beside the other two. */
+.home { display: grid; grid-template-areas: "intro" "sites" "plate"; padding-block: 44px 56px; }
+.home-intro { grid-area: intro; min-width: 0; }
+.home h1 { font: 400 clamp(42px, 9vw, 72px)/1.02 var(--serif); letter-spacing: -.03em; text-wrap: balance; }
+.home-lede { margin-top: 20px; color: rgb(var(--muted)); font-size: 17px; line-height: 1.7; }
+.home-sites { grid-area: sites; min-width: 0; margin-top: 36px; padding-top: 22px; border-top: 1px solid rgb(var(--rule-strong)); }
+.home-sites .eyebrow { margin-bottom: 16px; }
+.home-plate { grid-area: plate; width: 100%; max-width: 400px; margin-top: 52px; justify-self: center; }
+@media (min-width: 960px) {
+  .home {
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+    grid-template-areas: "intro plate" "sites plate";
+    align-content: center;
+    column-gap: clamp(56px, 7vw, 96px);
+    padding-block: 72px 88px;
+  }
+  /* Name and sites hug each other; the figure is centred against both. */
+  .home-intro { align-self: end; }
+  .home-sites { align-self: start; margin-top: 44px; }
+  .home-plate { align-self: center; max-width: none; margin-top: 0; }
+}
+
+/* ---------- Site cards ---------- */
+/* Each card previews its destination with that site's accent; a site
+   without its own accent takes the ink colour. */
+.site-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 20px; }
+.site-card {
+  --accent: var(--ink);
+  --accent-tint: var(--surface-overlay);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: rgb(var(--surface-raised));
+  border: 1px solid rgb(var(--rule));
+  border-top: 3px solid rgb(var(--accent));
+  border-radius: 2px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.site-card--resources { --accent: var(--resources); --accent-tint: var(--resources-tint); }
+.site-card--tuition { --accent: var(--tuition); --accent-tint: var(--tuition-tint); }
+.site-card:has(.site-card-link:focus-visible) { outline: 3px solid rgb(var(--accent)); outline-offset: 3px; }
+@media (hover: hover) {
+  .site-card:hover { border-color: rgb(var(--accent) / .55); border-top-color: rgb(var(--accent)); box-shadow: 0 28px 48px -36px rgb(var(--ink) / .45); }
+  .site-card:hover .site-card-link { text-decoration: underline; text-decoration-thickness: 1px; }
+  .site-card:hover .card-cta .arrow { transform: translateX(4px); }
+}
+
+.card-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 22px; border-bottom: 1px solid rgb(var(--rule)); font-family: var(--serif); font-size: 14px; color: rgb(var(--ink)); }
+.site-card--tuition .card-strip { background: rgb(var(--accent-tint)); border-bottom-color: rgb(var(--accent) / .18); }
+.card-strip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-strip svg { flex-shrink: 0; width: 14px; height: 14px; color: rgb(var(--accent)); }
+
+.card-body { display: flex; flex: 1; flex-direction: column; padding: 22px 22px 18px; }
+.card-body h3 { font: 400 30px/1.1 var(--serif); letter-spacing: -.02em; }
+.site-card-link::after { content: ''; position: absolute; inset: 0; }
+.site-card-link:focus-visible { outline: none; }
+.card-description { margin-top: 8px; color: rgb(var(--muted)); font-size: 15px; line-height: 1.55; }
+.card-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 18px; color: rgb(var(--accent)); font-size: 14px; font-weight: 600; }
+.card-cta .arrow { font-size: 20px; line-height: 1; transition: transform .18s; }
+
+/* ---------- Footer ---------- */
+.site-footer { border-top: 1px solid rgb(var(--rule)); padding-bottom: env(safe-area-inset-bottom); }
+.footer-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding-block: 22px; font-size: 13px; color: rgb(var(--muted)); }
+.site-footer nav { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+@media (hover: hover) {
+  .site-footer a:hover { color: rgb(var(--ink)); text-decoration: underline; }
+}
+@media (max-width: 767px) {
+  .footer-inner { flex-direction: column; align-items: flex-start; }
+  .site-footer a { display: inline-flex; align-items: center; min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+}

@@ -1,172 +1,111 @@
 ---
 import Layout from '~/layouts/Layout.astro';
+import CurvePlate from '~/components/CurvePlate.svelte';
 
+// One entry per subdomain; each site's own pages say the rest. A key with a
+// matching `site-card--<key>` style takes that site's accent.
 const sites = [
-  {
-    title: 'Resources',
-    description: 'Free A-level Further Maths questions by topic, worked solutions and TMUA practice papers.',
-    href: 'https://resources.danieljsmith.org',
-    subdomain: 'resources.danieljsmith.org',
-    theme: 'resources',
-  },
-  {
-    title: 'Tuition',
-    description: 'Mathematics & Physics tuition from GCSE to University. Entrance exams and admissions consultation.',
-    href: 'https://tuition.danieljsmith.org',
-    subdomain: 'tuition.danieljsmith.org',
-    theme: 'green',
-  },
-  // {
-  //   title: 'Blog',
-  //   description: 'Technical writing on tuition, mathematics, machine learning, and data science projects.',
-  //   href: 'https://blog.danieljsmith.org',
-  //   subdomain: 'blog.danieljsmith.org',
-  //   theme: 'amber',
-  // },
+  { key: 'resources', title: 'Resources', href: 'https://resources.danieljsmith.org/', description: 'Free Further Maths and TMUA practice, with worked solutions.' },
+  { key: 'tuition', title: 'Tuition', href: 'https://tuition.danieljsmith.org/', description: 'Private mathematics and physics tuition.' },
 ];
 
 const socialLinks = [
   {
     label: 'GitHub',
     href: 'https://github.com/danieljamessmith',
-    icon: 'github',
+    path: 'M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z',
   },
   {
     label: 'LinkedIn',
     href: 'https://www.linkedin.com/in/danieljames-smith/',
-    icon: 'linkedin',
+    path: 'M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z',
   },
 ];
+
+// Every link to a site carries the same analytics tags.
+const track = (key: string, location: string) => ({
+  'data-umami-event': 'site-click',
+  'data-umami-event-target': key,
+  'data-umami-event-location': location,
+  'data-forward-utm': '',
+});
 ---
 
 <Layout title="Daniel James Smith | Maths Resources & Private Tuition">
-  <div class="min-h-screen flex flex-col">
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col items-center justify-center px-4 py-10">
-      <!-- Subtle header with logo/initials -->
-      <header class="mb-12">
-        <a href="/" class="inline-flex items-center gap-5 group">
-          <img 
-            src="/favicon.png" 
-            alt="DJS" 
-            class="w-24 h-24 rounded-xl shadow-sm group-hover:shadow-md transition-shadow"
-          />
-          <span class="text-xl font-medium text-gray-600 group-hover:text-gray-900 transition-colors">
-            danieljsmith.org
-          </span>
-        </a>
-      </header>
-
-      <!-- Site Cards - Styled to preview their destinations -->
-      <section class="grid md:grid-cols-2 gap-6 max-w-4xl w-full mb-16 items-stretch">
-        {sites.map((site) => (
-          <a
-            href={site.href}
-            class:list={['site-card', `site-card--${site.theme}`]}
-            data-umami-event="site-click"
-            data-umami-event-target={site.title.toLowerCase()}
-            data-forward-utm
-          >
-            <h2>{site.title}</h2>
-            <p class="card-description">{site.description}</p>
-            <div class="card-footer">
-              <span class="card-cta">Explore {site.title.toLowerCase()} <span aria-hidden="true">&rarr;</span></span>
-              <span class="card-domain">{site.subdomain}</span>
-            </div>
+  <header class="site-header">
+    <div class="page-container header-bar">
+      <a href="/" class="site-name" aria-current="page">danieljsmith.org</a>
+      <nav class="header-links" aria-label="Sites and profiles">
+        {sites.map((site) => <a class="header-site" href={site.href} {...track(site.key, 'header')}>{site.title}</a>)}
+        <span class="header-divider" aria-hidden="true"></span>
+        {socialLinks.map((link) => (
+          <a class="icon-link" href={link.href} target="_blank" rel="noopener noreferrer" aria-label={`${link.label} (opens in a new tab)`} title={link.label}>
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={link.path} /></svg>
           </a>
         ))}
-      </section>
-    </main>
+      </nav>
+    </div>
+  </header>
 
-    <!-- Footer with Social Links -->
-    <footer class="border-t border-slate-200 bg-slate-100/50">
-      <div class="max-w-4xl mx-auto px-4 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p class="text-sm text-slate-500">
-          &copy; {new Date().getFullYear()} Daniel James Smith
-        </p>
-        <div class="flex gap-4">
-          {socialLinks.map((link) => (
-            <a
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={link.label}
-              class="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors"
-            >
-              {link.icon === 'github' && (
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                </svg>
-              )}
-              {link.icon === 'linkedin' && (
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
-                </svg>
-              )}
-              <span>{link.label}</span>
-            </a>
-          ))}
-        </div>
+  <main id="main-content" tabindex="-1" class="page-container home">
+    <div class="home-intro">
+      <h1>Daniel James Smith</h1>
+      <p class="home-lede">
+        MASt in Applied Mathematics, University of Cambridge.<br />
+        BSc in Mathematics and Physics, University of Warwick.
+      </p>
+    </div>
+
+    <section class="home-sites" aria-labelledby="sites-title">
+      <h2 id="sites-title" class="eyebrow">Sites</h2>
+      <div class="site-grid">
+        {sites.map((site) => (
+          <article class:list={['site-card', `site-card--${site.key}`]}>
+            <div class="card-strip" aria-hidden="true">
+              <span>{new URL(site.href).host}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9" /></svg>
+            </div>
+            <div class="card-body">
+              <h3><a class="site-card-link" href={site.href} {...track(site.key, 'card')}>{site.title}</a></h3>
+              <p class="card-description">{site.description}</p>
+              <p class="card-cta" aria-hidden="true">Visit <span class="arrow">&rarr;</span></p>
+            </div>
+          </article>
+        ))}
       </div>
-    </footer>
-  </div>
+    </section>
+
+    <div class="home-plate">
+      <CurvePlate client:visible />
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-container footer-inner">
+      <p>&copy; {new Date().getFullYear()} Daniel James Smith</p>
+      <nav aria-label="Elsewhere">
+        {sites.map((site) => <a href={site.href} {...track(site.key, 'footer')}>{site.title}</a>)}
+        {socialLinks.map((link) => (
+          <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}<span class="sr-only"> (opens in a new tab)</span></a>
+        ))}
+      </nav>
+    </div>
+  </footer>
 </Layout>
 
 <script>
-  // Carry an arriving visit's utm_* tags onto the site cards, so each
+  // Carry an arriving visit's utm_* tags onto every link to a site, so each
   // destination's own analytics still see where the visit started, and tag
-  // the card click event with the campaign.
+  // the click event with the campaign.
   const incoming = new URLSearchParams(window.location.search);
   const utm = [...incoming].filter(([key]) => key.startsWith('utm_'));
   if (utm.length > 0) {
     const campaign = incoming.get('utm_campaign');
-    for (const card of document.querySelectorAll<HTMLAnchorElement>('a[data-forward-utm]')) {
-      const url = new URL(card.href);
+    for (const link of document.querySelectorAll<HTMLAnchorElement>('a[data-forward-utm]')) {
+      const url = new URL(link.href);
       for (const [key, value] of utm) url.searchParams.set(key, value);
-      card.href = url.toString();
-      if (campaign) card.dataset.umamiEventCampaign = campaign;
+      link.href = url.toString();
+      if (campaign) link.dataset.umamiEventCampaign = campaign;
     }
   }
 </script>
-
-<style>
-  .site-card {
-    --card-accent: #763b43;
-    --card-surface: #faf9f6;
-    --card-hover: #f0eee8;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 270px;
-    height: 100%;
-    padding: 30px 32px 26px;
-    border: 1px solid #d8d5cd;
-    border-top: 3px solid var(--card-accent);
-    border-radius: 8px;
-    background: var(--card-surface);
-    color: #252a30;
-    font-family: Arial, Helvetica, sans-serif;
-    text-decoration: none;
-    box-shadow: 0 2px 8px #252a3006;
-    transition: background-color 180ms, border-color 180ms;
-  }
-  .site-card--green { --card-accent: #286653; --card-surface: #f6f9f6; --card-hover: #ecf2ed; }
-  .site-card:hover { background: var(--card-hover); border-color: var(--card-accent); }
-  .site-card:focus-visible { outline: 3px solid var(--card-accent); outline-offset: 4px; }
-  .site-card h2 {
-    margin: 0 0 14px;
-    font: 400 32px/1.15 Georgia, Cambria, serif;
-    letter-spacing: -.02em;
-  }
-  .card-description { margin: 0 0 26px; color: #60656a; font-size: 15px; line-height: 1.6; }
-  .card-footer { margin-top: auto; border-top: 1px solid #d8d5cd; padding-top: 17px; }
-  .card-cta { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--card-accent); font-size: 14px; font-weight: 600; }
-  .card-cta > span { font-size: 20px; line-height: 16px; }
-  .card-domain { display: block; margin-top: 12px; color: #60656a; font-size: 12px; overflow-wrap: anywhere; }
-  @media (max-width: 480px) {
-    .site-card { padding: 25px 24px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .site-card { transition: none; }
-  }
-</style>
