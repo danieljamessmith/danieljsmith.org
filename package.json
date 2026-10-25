@@ -8,16 +8,16 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
-  },
-  "dependencies": {
-    "@astrojs/svelte": "^7.2.5",
-    "astro": "^5.1.0",
-    "svelte": "^5.57.2",
-    "typescript": "^5.9.3"
+    "preview": "astro preview",
+    "check": "astro check"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@astrojs/svelte": "^9.1.1",
     "@tailwindcss/vite": "^4.3.3",
-    "tailwindcss": "^4.3.3"
+    "astro": "^7.4.2",
+    "svelte": "^5.57.2",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9.3"
   }
 }

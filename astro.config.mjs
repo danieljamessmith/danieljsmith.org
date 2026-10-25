@@ -4,6 +4,7 @@ import svelte from '@astrojs/svelte';
 
 export default defineConfig({
   site: 'https://danieljsmith.org',
+  compressHTML: true,
   integrations: [svelte()],
   vite: {
     plugins: [tailwindcss()],
