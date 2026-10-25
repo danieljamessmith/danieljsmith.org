@@ -1,3 +1,11 @@
+@import "tailwindcss";
+
+/* The two faces the resources and tuition sites also use. */
+@theme inline {
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-display: Georgia, Cambria, serif;
+}
+
 /* The editorial system shared with the resources and tuition sites: paper,
    Georgia headings over Arial text, fine rules and 2px corners. The two
    site accents (wine for resources, forest for tuition) mark everything
