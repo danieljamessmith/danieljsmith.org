@@ -150,6 +150,16 @@ main:focus { outline: none; }
 .card-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 18px; color: rgb(var(--accent)); font-size: 14px; font-weight: 600; }
 .card-cta .arrow { font-size: 20px; line-height: 1; transition: transform .18s; }
 
+/* ---------- Enquiry line ---------- */
+/* One line under the cards, in ink: the form it leads to serves both sites. */
+.home-enquiry { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 20px; margin-top: 20px; padding-top: 14px; border-top: 1px solid rgb(var(--rule)); color: rgb(var(--muted)); font-size: 15px; line-height: 1.55; }
+.home-enquiry a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: rgb(var(--ink)); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.home-enquiry .arrow { font-size: 20px; line-height: 1; transition: transform .18s; }
+@media (hover: hover) {
+  .home-enquiry a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
+  .home-enquiry a:hover .arrow { transform: translateX(4px); }
+}
+
 /* ---------- Footer ---------- */
 .site-footer { border-top: 1px solid rgb(var(--rule)); padding-bottom: env(safe-area-inset-bottom); }
 .footer-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; padding-block: 22px; font-size: 13px; color: rgb(var(--muted)); }

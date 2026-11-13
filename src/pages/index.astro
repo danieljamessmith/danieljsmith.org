@@ -22,6 +22,14 @@ const socialLinks = [
   },
 ];
 
+// The tuition site's contact form, which takes every kind of enquiry.
+const enquiryHref = 'https://tuition.danieljsmith.org/contact/';
+const trackEnquiry = (location: string) => ({
+  'data-umami-event': 'enquiry-click',
+  'data-umami-event-location': location,
+  'data-forward-utm': '',
+});
+
 // Every link to a site carries the same analytics tags.
 const track = (key: string, location: string) => ({
   'data-umami-event': 'site-click',
@@ -73,6 +81,10 @@ const track = (key: string, location: string) => ({
           </article>
         ))}
       </div>
+      <p class="home-enquiry">
+        <span>Tuition, personalised resources or anything else.</span>
+        <a href={enquiryHref} {...trackEnquiry('home')}>Get in touch <span class="arrow" aria-hidden="true">&rarr;</span></a>
+      </p>
     </section>
 
     <div class="home-plate">
@@ -85,6 +97,7 @@ const track = (key: string, location: string) => ({
       <p>&copy; {new Date().getFullYear()} Daniel James Smith</p>
       <nav aria-label="Elsewhere">
         {sites.map((site) => <a href={site.href} {...track(site.key, 'footer')}>{site.title}</a>)}
+        <a href={enquiryHref} {...trackEnquiry('footer')}>Contact</a>
         {socialLinks.map((link) => (
           <a href={link.href} target="_blank" rel="noopener noreferrer">{link.label}<span class="sr-only"> (opens in a new tab)</span></a>
         ))}
