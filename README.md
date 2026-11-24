@@ -6,7 +6,7 @@ Built with [Astro](https://astro.build), [Tailwind CSS](https://tailwindcss.com)
 
 To list another site, add an entry to `sites` in `src/pages/index.astro`; the header, cards and footer all follow it.
 
-The page shares the resources and tuition sites' editorial style (paper, Georgia headings, fine rules); its tokens and styles live in `src/styles/global.css`.
+The page shares the resources site's style (white paper, Latin Modern headings over Arial text, fine rules); its tokens and styles live in `src/styles/global.css`, and the font files in `public/fonts/`.
 
 ---
 

@@ -65,7 +65,7 @@ const track = (key: string, location: string) => ({
     </div>
 
     <section class="home-sites" aria-labelledby="sites-title">
-      <h2 id="sites-title" class="eyebrow">Sites</h2>
+      <h2 id="sites-title" class="sr-only">Sites</h2>
       <div class="site-grid">
         {sites.map((site) => (
           <article class:list={['site-card', `site-card--${site.key}`]}>
@@ -76,14 +76,13 @@ const track = (key: string, location: string) => ({
             <div class="card-body">
               <h3><a class="site-card-link" href={site.href} {...track(site.key, 'card')}>{site.title}</a></h3>
               <p class="card-description">{site.description}</p>
-              <p class="card-cta" aria-hidden="true">Visit <span class="arrow">&rarr;</span></p>
             </div>
           </article>
         ))}
       </div>
       <p class="home-enquiry">
         <span>Tuition, personalised resources or anything else.</span>
-        <a href={enquiryHref} {...trackEnquiry('home')}>Get in touch <span class="arrow" aria-hidden="true">&rarr;</span></a>
+        <a href={enquiryHref} {...trackEnquiry('home')}>Get in touch</a>
       </p>
     </section>
 

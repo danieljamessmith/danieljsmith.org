@@ -22,7 +22,6 @@
 
   // Curves alternate between the resources and tuition accents.
   const accent = (index: number) => (index % 2 === 0 ? 'rgb(var(--resources))' : 'rgb(var(--tuition))');
-  const pad = (n: number) => String(n).padStart(2, '0');
 
   let current = $state(0);
   let serial = 0;
@@ -61,7 +60,7 @@
         </g>
       {/each}
     </svg>
-    <span class="plate-corner" aria-hidden="true">{pad(current + 1)} / {pad(curves.length)}</span>
+    <span class="plate-corner" aria-hidden="true">{current + 1} of {curves.length}</span>
   </div>
   <figcaption class="plate-foot">
     <span id="plate-caption" class="plate-caption" aria-live="polite">
@@ -87,7 +86,6 @@
     aspect-ratio: 1;
     background: rgb(var(--surface-raised));
     border: 1px solid rgb(var(--rule));
-    box-shadow: 0 1px 0 rgb(var(--rule) / .6), 0 24px 48px -32px rgb(var(--ink) / .28);
   }
   svg { display: block; width: 100%; height: 100%; }
   .grid { fill: none; vector-effect: non-scaling-stroke; shape-rendering: crispEdges; }
@@ -118,8 +116,7 @@
     top: 10px;
     right: 12px;
     color: rgb(var(--muted));
-    font-size: 11px;
-    letter-spacing: .12em;
+    font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
 
@@ -132,18 +129,11 @@
     gap: 12px 20px;
     padding-top: 14px;
   }
-  .plate-caption { flex: 1 1 210px; min-width: 0; font-family: Georgia, Cambria, serif; line-height: 1.45; }
-  .plate-name { display: block; color: rgb(var(--ink)); font-size: 15px; }
-  .plate-fig {
-    margin-right: 6px;
-    color: rgb(var(--muted));
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-  }
-  .plate-equation { display: block; color: rgb(var(--muted)); font-size: 14px; }
+  .plate-caption { flex: 1 1 210px; min-width: 0; font-family: var(--serif); line-height: 1.45; }
+  .plate-name { display: block; color: rgb(var(--ink)); font-size: 16.5px; }
+  /* The figure number, as a textbook sets it. */
+  .plate-fig { margin-right: 6px; font-family: "LM Head", Georgia, Cambria, serif; font-weight: 700; }
+  .plate-equation { display: block; color: rgb(var(--muted)); font-size: 15.5px; }
   .plate-equation > span { white-space: nowrap; }
   .plate-equation :global(i) { font-style: italic; }
   .plate-note { display: block; margin-top: 2px; color: rgb(var(--muted)); font-family: Arial, Helvetica, sans-serif; font-size: 12px; }

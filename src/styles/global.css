@@ -1,32 +1,39 @@
 @import "tailwindcss";
 
-/* The two faces the resources and tuition sites also use. */
+/* Arial for text; headings and the figure's caption in Latin Modern, the
+   face the resources site's documents are typeset in. Georgia stands in
+   until a file loads. */
+@font-face { font-family: "LM Display"; font-weight: 400; font-style: normal; font-display: swap; src: url("/fonts/lmroman17-regular.woff2") format("woff2"); }
+@font-face { font-family: "LM Head"; font-weight: 700; font-style: normal; font-display: swap; src: url("/fonts/lmroman12-bold.woff2") format("woff2"); }
+@font-face { font-family: "LM Text"; font-weight: 400; font-style: normal; font-display: swap; src: url("/fonts/lmroman10-regular.woff2") format("woff2"); }
+@font-face { font-family: "LM Text"; font-weight: 400; font-style: italic; font-display: swap; src: url("/fonts/lmroman10-italic.woff2") format("woff2"); }
 @theme inline {
   --font-sans: Arial, Helvetica, sans-serif;
-  --font-display: Georgia, Cambria, serif;
+  --font-display: "LM Display", Georgia, Cambria, serif;
 }
 
-/* The editorial system shared with the resources and tuition sites: paper,
-   Georgia headings over Arial text, fine rules and 2px corners. The two
-   site accents (wine for resources, forest for tuition) mark everything
-   that leads to that site. */
+/* The system shared with the resources site: white paper, Latin Modern
+   headings over Arial text, fine rules and 2px corners. The two site
+   accents (wine for resources, forest for tuition) mark everything that
+   leads to that site. */
 :root {
   color-scheme: light;
-  --surface: 250 249 246;
-  --surface-raised: 255 254 251;
-  --surface-overlay: 240 238 232;
-  --ink: 37 42 48;
-  --muted: 96 101 106;
-  --rule: 216 213 205;
-  --rule-strong: 170 166 158;
+  --surface: 255 255 255;
+  --surface-raised: 255 255 255;
+  --surface-overlay: 244 245 247;
+  --ink: 24 27 31;
+  --muted: 88 94 102;
+  --rule: 221 224 229;
+  --rule-strong: 158 163 171;
   --resources: 118 59 67;
-  --resources-tint: 241 232 231;
+  --resources-tint: 247 236 238;
   --tuition: 36 84 66;
-  --tuition-tint: 234 240 228;
+  --tuition-tint: 233 242 236;
 
   --page-max: 1120px;
   --gutter: 20px;
-  --serif: Georgia, Cambria, 'Times New Roman', serif;
+  --display: "LM Display", Georgia, Cambria, 'Times New Roman', serif;
+  --serif: "LM Text", Georgia, Cambria, 'Times New Roman', serif;
 }
 @media (min-width: 768px) {
   :root { --gutter: clamp(28px, 5vw, 64px); }
@@ -62,14 +69,12 @@ main:focus { outline: none; }
   padding-right: max(var(--gutter), env(safe-area-inset-right));
 }
 
-.eyebrow { color: rgb(var(--muted)); font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; }
-
 /* ---------- Header ---------- */
 /* The top rule is split between the two sites' accents. */
 .site-header { border-bottom: 1px solid rgb(var(--rule)); background: rgb(var(--surface)); }
 .site-header::before { content: ''; display: block; height: 3px; background: linear-gradient(90deg, rgb(var(--resources)) 50%, rgb(var(--tuition)) 50%); }
 .header-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; }
-.site-name { font-family: var(--serif); font-size: clamp(17px, 4.6vw, 20px); line-height: 1.2; white-space: nowrap; }
+.site-name { font-family: var(--serif); font-size: clamp(18px, 4.8vw, 21px); line-height: 1.2; white-space: nowrap; }
 .header-links { display: flex; align-items: center; gap: 4px; }
 .header-site { display: none; padding: 8px 10px; font-size: 14px; color: rgb(var(--muted)); white-space: nowrap; }
 .header-divider { display: none; width: 1px; height: 20px; margin-inline: 8px; background: rgb(var(--rule)); }
@@ -92,10 +97,9 @@ main:focus { outline: none; }
    screens set the figure beside the other two. */
 .home { display: grid; grid-template-areas: "intro" "sites" "plate"; padding-block: 44px 56px; }
 .home-intro { grid-area: intro; min-width: 0; }
-.home h1 { font: 400 clamp(42px, 9vw, 72px)/1.02 var(--serif); letter-spacing: -.03em; text-wrap: balance; }
+.home h1 { font: 400 clamp(42px, 8.6vw, 66px)/1.04 var(--display); text-wrap: balance; }
 .home-lede { margin-top: 20px; color: rgb(var(--muted)); font-size: 17px; line-height: 1.7; }
 .home-sites { grid-area: sites; min-width: 0; margin-top: 36px; padding-top: 22px; border-top: 1px solid rgb(var(--rule-strong)); }
-.home-sites .eyebrow { margin-bottom: 16px; }
 .home-plate { grid-area: plate; width: 100%; max-width: 400px; margin-top: 52px; justify-self: center; }
 @media (min-width: 960px) {
   .home {
@@ -126,38 +130,33 @@ main:focus { outline: none; }
   border: 1px solid rgb(var(--rule));
   border-top: 3px solid rgb(var(--accent));
   border-radius: 2px;
-  transition: border-color .2s, box-shadow .2s;
+  transition: border-color .2s;
 }
 .site-card--resources { --accent: var(--resources); --accent-tint: var(--resources-tint); }
 .site-card--tuition { --accent: var(--tuition); --accent-tint: var(--tuition-tint); }
 .site-card:has(.site-card-link:focus-visible) { outline: 3px solid rgb(var(--accent)); outline-offset: 3px; }
 @media (hover: hover) {
-  .site-card:hover { border-color: rgb(var(--accent) / .55); border-top-color: rgb(var(--accent)); box-shadow: 0 28px 48px -36px rgb(var(--ink) / .45); }
+  .site-card:hover { border-color: rgb(var(--accent) / .55); border-top-color: rgb(var(--accent)); }
   .site-card:hover .site-card-link { text-decoration: underline; text-decoration-thickness: 1px; }
-  .site-card:hover .card-cta .arrow { transform: translateX(4px); }
 }
 
-.card-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 22px; border-bottom: 1px solid rgb(var(--rule)); font-family: var(--serif); font-size: 14px; color: rgb(var(--ink)); }
+.card-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 22px; border-bottom: 1px solid rgb(var(--rule)); font-family: var(--serif); font-size: 15px; color: rgb(var(--ink)); }
 .site-card--tuition .card-strip { background: rgb(var(--accent-tint)); border-bottom-color: rgb(var(--accent) / .18); }
 .card-strip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-strip svg { flex-shrink: 0; width: 14px; height: 14px; color: rgb(var(--accent)); }
 
-.card-body { display: flex; flex: 1; flex-direction: column; padding: 22px 22px 18px; }
-.card-body h3 { font: 400 30px/1.1 var(--serif); letter-spacing: -.02em; }
+.card-body { display: flex; flex: 1; flex-direction: column; padding: 22px; }
+.card-body h3 { font: 400 33px/1.1 var(--display); }
 .site-card-link::after { content: ''; position: absolute; inset: 0; }
 .site-card-link:focus-visible { outline: none; }
 .card-description { margin-top: 8px; color: rgb(var(--muted)); font-size: 15px; line-height: 1.55; }
-.card-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; padding-top: 18px; color: rgb(var(--accent)); font-size: 14px; font-weight: 600; }
-.card-cta .arrow { font-size: 20px; line-height: 1; transition: transform .18s; }
 
 /* ---------- Enquiry line ---------- */
 /* One line under the cards, in ink: the form it leads to serves both sites. */
 .home-enquiry { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 20px; margin-top: 20px; padding-top: 14px; border-top: 1px solid rgb(var(--rule)); color: rgb(var(--muted)); font-size: 15px; line-height: 1.55; }
-.home-enquiry a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: rgb(var(--ink)); font-size: 14px; font-weight: 600; white-space: nowrap; }
-.home-enquiry .arrow { font-size: 20px; line-height: 1; transition: transform .18s; }
+.home-enquiry a { display: inline-flex; align-items: center; min-height: 44px; color: rgb(var(--ink)); font-size: 14px; font-weight: 600; white-space: nowrap; text-decoration: underline; text-decoration-thickness: 1px; }
 @media (hover: hover) {
-  .home-enquiry a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
-  .home-enquiry a:hover .arrow { transform: translateX(4px); }
+  .home-enquiry a:hover { text-decoration-thickness: 2px; }
 }
 
 /* ---------- Footer ---------- */
