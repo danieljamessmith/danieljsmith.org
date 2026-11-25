@@ -1,8 +1,13 @@
 // The figure plate's library. Each curve is plain data: how to work out its
 // runs of points in mathematical coordinates, how to frame them, and a
 // caption. `frame` turns a curve into SVG path data on the 400-unit plate.
+// The drawing tools are in tools.ts, and the figures that need a view of
+// space, a knot diagram or the hyperbolic plane are worked out in geometry.ts.
 
-export type Point = [number, number];
+import { type Point, sample, polar, ring, contour, flow, keep, gcd } from './tools';
+import * as geometry from './geometry';
+
+export type { Point };
 
 export interface Curve {
   name: string;
@@ -27,21 +32,11 @@ export interface Curve {
   /** Stroke width in plate units. */
   weight?: number;
   /** What sort of figure it is: the plate keeps two of a kind apart. */
-  kind: 'classical' | 'roulette' | 'number' | 'fractal' | 'analysis' | 'dynamics' | 'physics' | 'envelope';
+  kind: 'classical' | 'roulette' | 'number' | 'fractal' | 'analysis' | 'dynamics' | 'physics' | 'envelope' | 'geometry' | 'surface' | 'tiling';
 }
 
-const { PI, sin, cos, tan, asin, sqrt, cbrt, exp, log, abs, floor, round, min, max, hypot, sign } = Math;
+const { PI, sin, cos, tan, asin, sqrt, cbrt, exp, log, abs, floor, round, min, max, hypot, sign, cosh, tanh } = Math;
 const TAU = 2 * PI;
-
-function sample(from: number, to: number, steps: number, f: (t: number) => Point): Point[] {
-  return Array.from({ length: steps + 1 }, (_, i) => f(from + ((to - from) * i) / steps));
-}
-const polar = (radius: (angle: number) => number) => (angle: number): Point => [
-  radius(angle) * cos(angle),
-  radius(angle) * sin(angle),
-];
-const ring = (cx: number, cy: number, radius: number, steps = 96): Point[] =>
-  sample(0, TAU, steps, (a) => [cx + radius * cos(a), cy + radius * sin(a)]);
 
 /**
  * The real points of y = c ± √f(x) for x in [x0, x1]: for y² = f(x), or a
@@ -85,70 +80,6 @@ function cubic(f: (x: number) => number, x0: number, x1: number, c = 0, steps = 
   return runs;
 }
 
-/**
- * The curve f(x, y) = 0 inside a box, by marching squares on an n-by-n
- * grid: each cell's crossings are joined, then the pieces are walked into
- * runs.
- */
-function contour(f: (x: number, y: number) => number, [x0, x1, y0, y1]: number[], n = 240): Point[][] {
-  const w = n + 1;
-  const [dx, dy] = [(x1 - x0) / n, (y1 - y0) / n];
-  const v = new Float64Array(w * w);
-  for (let j = 0; j < w; j++) for (let i = 0; i < w; i++) v[j * w + i] = f(x0 + i * dx, y0 + j * dy);
-  // An edge is numbered by the node it leaves and its side, rightwards (0) or
-  // upwards (1). A crossing on it is joined to at most two others.
-  const links = new Int32Array(4 * w * w).fill(-1);
-  const link = (a: number, b: number) => {
-    links[2 * a + (links[2 * a] < 0 ? 0 : 1)] = b;
-    links[2 * b + (links[2 * b] < 0 ? 0 : 1)] = a;
-  };
-  for (let j = 0; j < n; j++) {
-    for (let i = 0; i < n; i++) {
-      const node = j * w + i;
-      const [a, b, c, d] = [v[node] > 0, v[node + 1] > 0, v[node + w + 1] > 0, v[node + w] > 0];
-      if (a === b && b === c && c === d) continue;
-      // The cell's bottom, right, top and left edges, where the curve crosses them.
-      const hits: number[] = [];
-      if (a !== b) hits.push(2 * node);
-      if (b !== c) hits.push(2 * (node + 1) + 1);
-      if (c !== d) hits.push(2 * (node + w));
-      if (d !== a) hits.push(2 * node + 1);
-      if (hits.length === 2) link(hits[0], hits[1]);
-      if (hits.length === 4) {
-        // A saddle: the centre says which pair of corners is joined.
-        const centre = f(x0 + (i + 0.5) * dx, y0 + (j + 0.5) * dy) > 0;
-        if (centre === a) { link(hits[0], hits[1]); link(hits[2], hits[3]); }
-        else { link(hits[0], hits[3]); link(hits[1], hits[2]); }
-      }
-    }
-  }
-  const at = (key: number): Point => {
-    const [node, side] = [key >> 1, key & 1];
-    const [a, b] = [v[node], v[side ? node + w : node + 1]];
-    const s = a / (a - b);
-    return [x0 + ((node % w) + (1 - side) * s) * dx, y0 + (floor(node / w) + side * s) * dy];
-  };
-  const runs: Point[][] = [];
-  const seen = new Uint8Array(2 * w * w);
-  const walk = (start: number) => {
-    const run: Point[] = [];
-    let [key, last] = [start, start];
-    while (key >= 0) {
-      seen[key] = 1;
-      run.push(at(key));
-      last = key;
-      const [a, b] = [links[2 * key], links[2 * key + 1]];
-      key = a >= 0 && !seen[a] ? a : b >= 0 && !seen[b] ? b : -1;
-    }
-    if (run.length > 2 && (links[2 * last] === start || links[2 * last + 1] === start)) run.push(at(start));
-    runs.push(run);
-  };
-  // Open pieces from their ends first, then the closed loops.
-  for (let key = 0; key < 2 * w * w; key++) if (!seen[key] && links[2 * key] >= 0 && links[2 * key + 1] < 0) walk(key);
-  for (let key = 0; key < 2 * w * w; key++) if (!seen[key] && links[2 * key] >= 0) walk(key);
-  return runs;
-}
-
 /** A turtle's walk along an L-system: the letters in `steps` move forwards, + and − turn. */
 function lsystem(axiom: string, rules: Record<string, string>, depth: number, angle: number, steps = 'F'): Point[] {
   let word = axiom;
@@ -170,22 +101,6 @@ function chamfer(points: Point[], cut = 0.25): Point[] {
     const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
     return [[a[0] + cut * dx, a[1] + cut * dy], [b[0] - cut * dx, b[1] - cut * dy]];
   });
-}
-
-/** A trajectory of the system s′ = f(s), by fourth-order Runge–Kutta. */
-function flow(f: (s: number[]) => number[], start: number[], dt: number, steps: number): number[][] {
-  const out = [start];
-  const along = (s: number[], k: number[], h: number) => s.map((v, i) => v + h * k[i]);
-  let s = start;
-  for (let n = 0; n < steps; n++) {
-    const k1 = f(s);
-    const k2 = f(along(s, k1, dt / 2));
-    const k3 = f(along(s, k2, dt / 2));
-    const k4 = f(along(s, k3, dt));
-    s = s.map((v, i) => v + (dt / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
-    out.push(s);
-  }
-  return out;
 }
 
 function koch(level: number): Point[] {
@@ -259,7 +174,7 @@ const isPrime = (n: number) => {
   for (let k = 2; k * k <= n; k++) if (n % k === 0) return false;
   return true;
 };
-const gcd = (a: number, b: number): number => (b ? gcd(b, a % b) : a);
+
 
 /** The circles of an Apollonian gasket inside the unit circle, largest first, as [x, y, radius]. */
 function gasket(limit: number): number[][] {
@@ -285,18 +200,6 @@ function gasket(limit: number): number[][] {
   fill(o, b, c, a);
   fill(a, b, c, o);
   return found.sort((p, q) => p[0] - q[0]).map(([k, x, y]) => [x, y, 1 / abs(k)]);
-}
-
-/** The pieces of each run whose points pass a test. */
-function keep(runs: Point[][], test: (p: Point) => boolean): Point[][] {
-  return runs.flatMap((run) => {
-    const pieces: Point[][] = [[]];
-    for (const p of run) {
-      if (test(p)) pieces[pieces.length - 1].push(p);
-      else if (pieces[pieces.length - 1].length) pieces.push([]);
-    }
-    return pieces.filter((piece) => piece.length > 1);
-  });
 }
 
 /**
@@ -343,28 +246,187 @@ function pythagoras(depth: number, lean: number): Point[][] {
   return squares;
 }
 
+/** Recamán's sequence, each step a semicircle, above and below the line by turns. */
+function recaman(count = 65): Point[][] {
+  const used = new Set([0]);
+  let a = 0;
+  const stroke: Point[] = [];
+  for (let n = 1; n <= count; n++) {
+    const b = a - n > 0 && !used.has(a - n) ? a - n : a + n;
+    used.add(b);
+    const [c, r, up, way] = [(a + b) / 2, n / 2, n % 2 ? 1 : -1, a < b ? -1 : 1];
+    stroke.push(...sample(0, PI, 10 + n, (t): Point => [c + way * r * cos(t), up * r * sin(t)]));
+    a = b;
+  }
+  return [stroke];
+}
+
+/** Hofstadter's butterfly: the allowed energies of an electron on a square lattice, for each rational flux p/q. */
+function hofstadter(limit = 30): Point[][] {
+  const runs: Point[][] = [];
+  for (let q = 1; q <= limit; q++) {
+    for (let p = 0; p <= q; p++) {
+      if (gcd(p, q) !== 1) continue;
+      const excess = (E: number) => {
+        let [a, b, c, d] = [1, 0, 0, 1];
+        for (let n = 0; n < q; n++) {
+          const v = E - 2 * cos((TAU * p * n) / q + PI / (2 * q));
+          [a, b, c, d] = [v * a - c, v * b - d, a, b];
+        }
+        return abs(a + d) - 4;
+      };
+      const step = 0.01;
+      let [before, from] = [excess(-4.03), NaN];
+      for (let E = -4.03 + step; E < 4.04; E += step) {
+        const now = excess(E);
+        const edge = E - step + (step * before) / (before - now);
+        if (before > 0 && now <= 0) from = edge;
+        if (before <= 0 && now > 0 && !Number.isNaN(from)) runs.push([[from, (8 * p) / q], [max(edge, from + 0.004), (8 * p) / q]]);
+        before = now;
+      }
+    }
+  }
+  return runs;
+}
+
+/** Penrose's rhombs, by a rewriting rule: each edge once. */
+function penrose(depth = 4): Point[][] {
+  const rules: Record<string, string> = {
+    6: '81++91----71[-81----61]++',
+    7: '+81--91[---61--71]+',
+    8: '-61++71[+++81++91]-',
+    9: '--81++++61[+91++++71]--71',
+    1: '',
+  };
+  let word = '[7]++[7]++[7]++[7]++[7]';
+  for (let n = 0; n < depth; n++) word = [...word].map((c) => rules[c] ?? c).join('');
+  let [x, y, a] = [0, 0, 0];
+  const stack: number[][] = [];
+  const edges = new Map<string, Point[]>();
+  const mark = (u: number, v: number) => `${round(u * 1000)},${round(v * 1000)}`;
+  for (const c of word) {
+    if (c === '+') a += PI / 5;
+    else if (c === '-') a -= PI / 5;
+    else if (c === '[') stack.push([x, y, a]);
+    else if (c === ']') [x, y, a] = stack.pop()!;
+    else if (c === '1') {
+      const [u, v] = [x + cos(a), y + sin(a)];
+      const key = [mark(x, y), mark(u, v)].sort().join('|');
+      if (!edges.has(key)) edges.set(key, [[x, y], [u, v]]);
+      [x, y] = [u, v];
+    }
+  }
+  return [...edges.values()];
+}
+
+/** Lines of force between charges of 20 and −5, twenty-four from the larger. */
+function linesOfForce(): Point[][] {
+  const charges = [[20, -1, 0], [-5, 1, 0]];
+  const field = (x: number, y: number): Point => {
+    let [ex, ey] = [0, 0];
+    for (const [q, cx, cy] of charges) {
+      const d3 = hypot(x - cx, y - cy) ** 3;
+      ex += (q * (x - cx)) / d3;
+      ey += (q * (y - cy)) / d3;
+    }
+    const m = hypot(ex, ey);
+    return [ex / m, ey / m];
+  };
+  return Array.from({ length: 24 }, (_, k) => {
+    const a = (TAU * (k + 0.5)) / 24;
+    let [x, y] = [-1 + 0.05 * cos(a), 0.05 * sin(a)];
+    const line: Point[] = [[x, y]];
+    for (let n = 0; n < 4000; n++) {
+      const [mx, my] = field(x, y);
+      const [ex, ey] = field(x + 0.006 * mx, y + 0.006 * my);
+      x += 0.012 * ex;
+      y += 0.012 * ey;
+      if (hypot(x - 1, y) < 0.04 || abs(x - 0.5) > 5 || abs(y) > 5) break;
+      if (n % 3 === 2) line.push([x, y]);
+    }
+    return [...line, [x, y] as Point];
+  });
+}
+
+/** Descartes's rays through a raindrop: refracted, reflected once and refracted again, crowding at 42°. */
+function rainbow(): Point[][] {
+  const index = 4 / 3;
+  const runs: Point[][] = [ring(0, 0, 1, 96)];
+  for (const b of [0.12, 0.26, 0.4, 0.52, 0.62, 0.7, 0.77, 0.82, 0.86, 0.9, 0.935, 0.965, 0.99]) {
+    const [i, r] = [asin(b), asin(b / index)];
+    const at = (a: number): Point => [cos(a), sin(a)];
+    const [p1, p2, p3] = [at(PI - i), at(2 * r - i), at(4 * r - i - PI)];
+    const out = PI + 2 * i - 4 * r;
+    runs.push([[-3.4, b], p1, p2, p3, [p3[0] + 3.4 * cos(out), p3[1] - 3.4 * sin(out)]]);
+  }
+  return runs;
+}
+
+/** Streamlines of Kármán's vortex street, seen moving with the vortices. */
+function vortexStreet(): Point[][] {
+  const h = 0.2806;
+  const drift = tanh(PI * h) / 2;
+  const psi = (x: number, y: number) =>
+    log((cosh(TAU * (y - h / 2)) - cos(TAU * x)) / (cosh(TAU * (y + h / 2)) + cos(TAU * x))) / (4 * PI) + drift * y;
+  const runs: Point[][] = [];
+  for (let level = -0.48; level < 0.49; level += 0.06) runs.push(...contour((x, y) => psi(x, y) - level, [-1.3, 1.3, -1.3, 1.3], 200));
+  return runs;
+}
+
+/** Two solitons of the Korteweg–de Vries equation passing through one another, time running up the page. */
+function solitons(): Point[][] {
+  const u = (x: number, t: number) => (12 * (3 + 4 * cosh(2 * x - 8 * t) + cosh(4 * x - 64 * t))) / (3 * cosh(x - 28 * t) + cosh(3 * x - 36 * t)) ** 2;
+  const [rows, columns, rise, height] = [28, 220, 0.45, 0.19];
+  const skyline = new Float64Array(columns + 1).fill(-Infinity);
+  const runs: Point[][] = [];
+  for (let row = 0; row < rows; row++) {
+    const t = -0.55 + (1.1 * row) / (rows - 1);
+    let piece: Point[] = [];
+    for (let c = 0; c <= columns; c++) {
+      const x = -11 + (22 * c) / columns;
+      const y = row * rise + height * u(x, t);
+      // A row is hidden where an earlier one stands higher on the page.
+      if (y > skyline[c]) {
+        piece.push([x, y]);
+        skyline[c] = y;
+      } else if (piece.length) {
+        if (piece.length > 1) runs.push(piece);
+        piece = [];
+      }
+    }
+    if (piece.length > 1) runs.push(piece);
+  }
+  return runs;
+}
+
 const i = (v: string) => `<i>${v}</i>`;
 const sup = (v: string) => `<sup>${v}</sup>`;
 const sub = (v: string) => `<sub>${v}</sub>`;
 const [x, y, t, r, θ, z, n, k] = ['x', 'y', 't', 'r', 'θ', 'z', 'n', 'k'].map(i);
 
-// The three bodies of the figure-eight orbit: positions, then velocities.
+// Three equal masses under gravity: positions, then velocities.
+const pull = (s: number[]) => {
+  const out = [s[6], s[7], s[8], s[9], s[10], s[11], 0, 0, 0, 0, 0, 0];
+  for (let a = 0; a < 3; a++) {
+    for (let b = 0; b < 3; b++) {
+      if (a === b) continue;
+      const [dx, dy] = [s[2 * b] - s[2 * a], s[2 * b + 1] - s[2 * a + 1]];
+      const d3 = hypot(dx, dy) ** 3;
+      out[6 + 2 * a] += dx / d3;
+      out[7 + 2 * a] += dy / d3;
+    }
+  }
+  return out;
+};
+// The figure-eight orbit.
 const eight = () => {
   const [px, py, vx, vy] = [0.97000436, -0.24308753, -0.93240737, -0.86473146];
-  const pull = (s: number[]) => {
-    const out = [s[6], s[7], s[8], s[9], s[10], s[11], 0, 0, 0, 0, 0, 0];
-    for (let a = 0; a < 3; a++) {
-      for (let b = 0; b < 3; b++) {
-        if (a === b) continue;
-        const [dx, dy] = [s[2 * b] - s[2 * a], s[2 * b + 1] - s[2 * a + 1]];
-        const d3 = hypot(dx, dy) ** 3;
-        out[6 + 2 * a] += dx / d3;
-        out[7 + 2 * a] += dy / d3;
-      }
-    }
-    return out;
-  };
   return flow(pull, [px, py, -px, -py, 0, 0, -vx / 2, -vy / 2, -vx / 2, -vy / 2, vx, vy], 0.002, 3163);
+};
+// Šuvakov and Dmitrašinović's moth I: two bodies set off alike from ±1, the third against them from between.
+const moth = () => {
+  const [vx, vy, period, steps] = [0.46444, 0.39606, 14.8939, 6000];
+  return flow(pull, [-1, 0, 1, 0, 0, 0, vx, vy, vx, vy, -2 * vx, -2 * vy], period / steps, steps);
 };
 
 // The restricted three-body problem's potential in the rotating frame, masses 1 − μ and μ.
@@ -447,6 +509,15 @@ export const curves: Curve[] = [
     kind: 'roulette',
   },
   {
+    name: 'Loxodrome',
+    lines: [`sin ${i('φ')} = tanh ${i('kλ')}`],
+    credit: 'Pedro Nunes, 1537',
+    note: 'A ship’s course on one compass bearing',
+    runs: geometry.loxodrome,
+    axes: false,
+    kind: 'geometry',
+  },
+  {
     name: 'Fermat’s spiral',
     lines: [`${r}${sup('2')} = ${θ}`],
     credit: 'Pierre de Fermat, 1636',
@@ -456,6 +527,16 @@ export const curves: Curve[] = [
     ]],
     weight: 1.2,
     kind: 'classical',
+  },
+  {
+    name: 'Descartes’s rainbow',
+    lines: [`sin ${i('i')} = ${sup('4')}⁄${sub('3')} sin ${r}`],
+    credit: 'René Descartes, 1637',
+    note: 'Rays through a raindrop crowd together at 42°',
+    runs: rainbow,
+    axes: false,
+    weight: 1.1,
+    kind: 'physics',
   },
   {
     name: 'Folium of Descartes',
@@ -488,6 +569,16 @@ export const curves: Curve[] = [
     span: 12,
     weight: 1.6,
     kind: 'number',
+  },
+  {
+    name: 'Ruled hyperboloid',
+    lines: [`${x}${sup('2')} + ${y}${sup('2')} − ${z}${sup('2')} = 1`],
+    credit: 'Christopher Wren, 1669',
+    note: 'A curved surface made of two families of straight lines',
+    runs: geometry.hyperboloid,
+    axes: false,
+    weight: 1,
+    kind: 'surface',
   },
   {
     name: 'Elliptic curve',
@@ -607,6 +698,15 @@ export const curves: Curve[] = [
     kind: 'classical',
   },
   {
+    name: 'Elastica',
+    lines: [`${θ}″ = −sin ${θ}`],
+    credit: 'Leonhard Euler, 1744',
+    note: 'The shapes a thin rod takes when it is bent',
+    runs: geometry.elastica,
+    axes: false,
+    kind: 'geometry',
+  },
+  {
     name: 'Witch of Agnesi',
     lines: [`${y}(${x}${sup('2')} + 1) = 1`],
     credit: 'Maria Gaetana Agnesi, 1748',
@@ -637,6 +737,16 @@ export const curves: Curve[] = [
     kind: 'physics',
   },
   {
+    name: 'Lines of curvature',
+    lines: [`${x}${sup('2')}/${i('a')}${sup('2')} + ${y}${sup('2')}/${i('b')}${sup('2')} + ${z}${sup('2')}/${i('c')}${sup('2')} = 1`],
+    credit: 'Gaspard Monge, 1796',
+    note: 'On an ellipsoid they close round four umbilics, two seen here',
+    runs: geometry.curvatureLines,
+    axes: false,
+    weight: 1.2,
+    kind: 'surface',
+  },
+  {
     name: 'Lamé curves',
     lines: [`|${x}|${sup(n)} + |${y}|${sup(n)} = 1`],
     credit: 'Gabriel Lamé, 1818',
@@ -644,6 +754,36 @@ export const curves: Curve[] = [
     runs: () => [0.5, 2 / 3, 1, 1.5, 2, 3, 6].map((p) => sample(0, TAU, 720, (a) => [sign(cos(a)) * abs(cos(a)) ** (2 / p), sign(sin(a)) * abs(sin(a)) ** (2 / p)])),
     weight: 1.1,
     kind: 'classical',
+  },
+  {
+    name: 'Dupin cyclide',
+    lines: ['A torus inverted in a sphere'],
+    credit: 'Charles Dupin, 1822',
+    note: 'Every one of its lines of curvature is a circle',
+    runs: geometry.cyclide,
+    axes: false,
+    weight: 1,
+    kind: 'surface',
+  },
+  {
+    name: 'Geodesic on an ellipsoid',
+    lines: [`${i('a')} : ${i('b')} : ${i('c')} = 1.7 : 1.2 : 0.85`],
+    credit: 'Carl Jacobi, 1838',
+    note: 'One straightest path, weaving between two lines of curvature',
+    runs: geometry.ellipsoidGeodesic,
+    axes: false,
+    weight: 0.8,
+    kind: 'surface',
+  },
+  {
+    name: 'Jacobi’s last statement',
+    lines: ['Geodesics from one point', 'of an ellipsoid'],
+    credit: 'Carl Jacobi, 1843',
+    note: 'An envelope of four cusps, proved in 2004',
+    runs: geometry.fourCusps,
+    axes: false,
+    weight: 0.9,
+    kind: 'geometry',
   },
   {
     name: 'Harmonograph',
@@ -655,6 +795,16 @@ export const curves: Curve[] = [
     kind: 'roulette',
   },
   {
+    name: 'Figure-eight knot',
+    lines: [`${r} = 2 + cos 2${t}, ${θ} = 3${t},`, `${z} = sin 4${t}`],
+    credit: 'Johann Benedict Listing, 1849',
+    note: 'Listing’s knot: it can be turned into its mirror image',
+    runs: geometry.figureEight,
+    axes: false,
+    weight: 2.4,
+    kind: 'geometry',
+  },
+  {
     name: 'Lissajous figure',
     lines: [`${x} = sin 3${t},`, `${y} = sin 4${t}`],
     credit: 'Jules Lissajous, 1857',
@@ -662,6 +812,16 @@ export const curves: Curve[] = [
     runs: () => [sample(0, TAU, 720, (s) => [sin(3 * s), sin(4 * s)])],
     weight: 1.6,
     kind: 'roulette',
+  },
+  {
+    name: 'Möbius strip',
+    lines: [`${r} = 1 + ${i('v')} cos ½${θ},`, `${z} = ${i('v')} sin ½${θ}`],
+    credit: 'Listing and Möbius, 1858',
+    note: 'One side and one edge',
+    runs: geometry.mobius,
+    axes: false,
+    weight: 1.1,
+    kind: 'surface',
   },
   {
     name: 'Riemann zeta function',
@@ -675,6 +835,26 @@ export const curves: Curve[] = [
     kind: 'analysis',
   },
   {
+    name: 'Enneper surface',
+    lines: [`${x} = ${i('u')} − ⅓${i('u')}${sup('3')} + ${i('uv')}${sup('2')},`, `${z} = ${i('u')}${sup('2')} − ${i('v')}${sup('2')}`],
+    credit: 'Alfred Enneper, 1864',
+    note: 'A minimal surface that passes through itself',
+    runs: geometry.enneper,
+    axes: false,
+    weight: 1,
+    kind: 'surface',
+  },
+  {
+    name: 'Dini’s surface',
+    lines: [`${z} = cos ${i('v')} + ln tan ½${i('v')} + ${i('bu')}`],
+    credit: 'Ulisse Dini, 1865',
+    note: 'A twisted pseudosphere, with constant negative curvature',
+    runs: geometry.dini,
+    axes: false,
+    weight: 0.9,
+    kind: 'surface',
+  },
+  {
     name: 'Weierstrass function',
     lines: [`${y} = Σ 2${sup(`−${n}`)} cos(3${sup(n)}π${x})`],
     credit: 'Karl Weierstrass, 1872',
@@ -682,6 +862,32 @@ export const curves: Curve[] = [
     runs: () => [sample(-1, 1, 6000, (u) => [u, 0.42 * Array.from({ length: 12 }, (_, m) => cos(3 ** m * PI * u) / 2 ** m).reduce((a, b) => a + b)])],
     weight: 0.8,
     kind: 'analysis',
+  },
+  {
+    name: 'Lines of force',
+    lines: ['Charges of 20 and −5'],
+    credit: 'James Clerk Maxwell, 1873',
+    note: 'After Fig. II of his Treatise, without the equipotentials',
+    runs: linesOfForce,
+    dots: () => [[-1, 0], [1, 0]],
+    dotRadius: 3.5,
+    origin: [8.8, 10],
+    span: 8.4,
+    axes: false,
+    weight: 1.1,
+    kind: 'physics',
+  },
+  {
+    name: 'Modular tessellation',
+    lines: [`${z} ↦ ${z} + 1,`, `${z} ↦ −1/${z}`],
+    credit: 'Richard Dedekind, 1877',
+    note: 'Copies of one region, moved by the modular group',
+    runs: geometry.modular,
+    origin: [10, 1],
+    span: 2.3,
+    axes: false,
+    weight: 1,
+    kind: 'tiling',
   },
   {
     name: 'Zero-velocity curves',
@@ -699,6 +905,16 @@ export const curves: Curve[] = [
     axes: false,
     weight: 1,
     kind: 'dynamics',
+  },
+  {
+    name: 'Hyperbolic tiling',
+    lines: ['{7, 3}: three heptagons', 'at every corner'],
+    credit: 'After Felix Klein, 1879',
+    note: 'The heptagons are all one hyperbolic size',
+    runs: () => geometry.hyperbolicTiling(7, 3, 4),
+    axes: false,
+    weight: 1,
+    kind: 'tiling',
   },
   {
     name: 'Devil’s staircase',
@@ -740,6 +956,26 @@ export const curves: Curve[] = [
     axes: false,
     weight: 1.3,
     kind: 'fractal',
+  },
+  {
+    name: 'Circles of curvature',
+    lines: [`Of the spiral ${r} = ${θ}`],
+    credit: 'Peter Guthrie Tait, 1896',
+    note: 'No two of the circles meet; the spiral itself is not drawn',
+    runs: geometry.osculating,
+    axes: false,
+    weight: 1,
+    kind: 'geometry',
+  },
+  {
+    name: 'Umbilic points',
+    lines: ['Lemon, monstar, star'],
+    credit: 'Gaston Darboux, 1896',
+    note: 'The three ways lines of curvature meet at an umbilic',
+    runs: geometry.umbilics,
+    axes: false,
+    weight: 1.1,
+    kind: 'geometry',
   },
   {
     name: 'Blancmange curve',
@@ -788,6 +1024,17 @@ export const curves: Curve[] = [
     kind: 'physics',
   },
   {
+    name: 'Kármán vortex street',
+    lines: [`${i('h')}/${i('a')} = 0.281`],
+    credit: 'Theodore von Kármán, 1911',
+    note: 'The wake of a cylinder, seen moving with its vortices',
+    runs: vortexStreet,
+    span: 2.6,
+    axes: false,
+    weight: 1,
+    kind: 'physics',
+  },
+  {
     name: 'Sierpiński arrowhead curve',
     lines: ['Order 7'],
     credit: 'Wacław Sierpiński, 1915',
@@ -808,6 +1055,27 @@ export const curves: Curve[] = [
     kind: 'physics',
   },
   {
+    name: 'Flamm’s paraboloid',
+    lines: [`${z}${sup('2')} = 8${i('M')}(${r} − 2${i('M')})`],
+    credit: 'Ludwig Flamm, 1916',
+    note: 'Space round a star, drawn as a surface',
+    runs: geometry.flamm,
+    axes: false,
+    weight: 1,
+    kind: 'surface',
+  },
+  {
+    name: 'Light past a black hole',
+    lines: [`${i('u')}″ + ${i('u')} = 3${i('Mu')}${sup('2')},`, `${i('u')} = 1/${r}`],
+    credit: 'David Hilbert, 1917',
+    note: 'Rays aimed inside 3√3 M are caught',
+    runs: geometry.lightRays,
+    span: 30,
+    axes: false,
+    weight: 1.1,
+    kind: 'physics',
+  },
+  {
     name: 'Taxicab curve',
     lines: [`${x}${sup('3')} + ${y}${sup('3')} = 1729`],
     credit: 'Hardy and Ramanujan, c. 1919',
@@ -818,6 +1086,17 @@ export const curves: Curve[] = [
     span: 16,
     weight: 1.6,
     kind: 'number',
+  },
+  {
+    name: 'Hopf fibration',
+    lines: [`${i('S')}${sup('3')} → ${i('S')}${sup('2')},`, `(${z}, ${i('w')}) ↦ ${z}/${i('w')}`],
+    credit: 'Heinz Hopf, 1931',
+    note: 'Each circle is one point of the sphere; any two are linked',
+    // The unit circle, then fibres over half of each of two circles of latitude.
+    runs: () => geometry.hopf([[0, 1], [0.3, 14, 0.5, 0], [0.6, 18, 0.5, PI]], 1.05, 0.4),
+    axes: false,
+    weight: 1,
+    kind: 'geometry',
   },
   {
     name: 'Lévy C curve',
@@ -882,6 +1161,17 @@ export const curves: Curve[] = [
     kind: 'fractal',
   },
   {
+    name: 'Kruskal diagram',
+    lines: [`${i('X')}${sup('2')} − ${i('T')}${sup('2')} = (${r}/2${i('M')} − 1) e${sup(`${r}/2${i('M')}`)}`],
+    credit: 'Kruskal and Szekeres, 1960',
+    note: 'One chart for the whole of a black hole, inside and out',
+    runs: geometry.kruskal,
+    span: 4.9,
+    axes: false,
+    weight: 1.1,
+    kind: 'physics',
+  },
+  {
     name: 'Lorenz attractor',
     lines: [`${x}′ = 10(${y} − ${x}),`, `${y}′ = ${x}(28 − ${z}) − ${y},`, `${z}′ = ${x}${y} − ${sup('8')}⁄${sub('3')}${z}`],
     credit: 'Edward Lorenz, 1963',
@@ -903,6 +1193,16 @@ export const curves: Curve[] = [
     axes: false,
     weight: 0.5,
     kind: 'number',
+  },
+  {
+    name: 'Two solitons',
+    lines: [`${i('u')}${sub(t)} + 6${i('uu')}${sub(x)} + ${i('u')}${sub(i('xxx'))} = 0`],
+    credit: 'Zabusky and Kruskal, 1965',
+    note: 'The waves pass through each other and come out unchanged',
+    runs: solitons,
+    axes: false,
+    weight: 1,
+    kind: 'physics',
   },
   {
     name: 'Dragon curve',
@@ -945,6 +1245,26 @@ export const curves: Curve[] = [
     kind: 'dynamics',
   },
   {
+    name: 'Hofstadter’s butterfly',
+    lines: [`${i('ψ')}${sub(`${n}+1`)} + ${i('ψ')}${sub(`${n}−1`)}`, `+ 2 cos(2π${i('nα')}) ${i('ψ')}${sub(n)} = ${i('Eψ')}${sub(n)}`],
+    credit: 'Douglas Hofstadter, 1976',
+    note: 'Allowed energies against magnetic flux',
+    runs: () => hofstadter(30),
+    axes: false,
+    weight: 1,
+    kind: 'physics',
+  },
+  {
+    name: 'Penrose tiling',
+    lines: ['Rhombs of 36° and 72°'],
+    credit: 'Roger Penrose, publ. 1978',
+    note: 'It covers the plane and never repeats',
+    runs: () => penrose(4),
+    axes: false,
+    weight: 1,
+    kind: 'tiling',
+  },
+  {
     name: 'Sunflower',
     lines: [`${r} = √${n},`, `${θ} = 137.5°${n}`],
     credit: 'Helmut Vogel, 1979',
@@ -980,6 +1300,26 @@ export const curves: Curve[] = [
     runs: () => [Array.from({ length: 361 }, (_, c) => polar((a) => sin(5 * a))((97 * c * PI) / 180))],
     weight: 0.6,
     kind: 'envelope',
+  },
+  {
+    name: 'Curve-shortening flow',
+    lines: [`∂${i('γ')}/∂${t} = ${i('κ')}${n}`],
+    credit: 'Matthew Grayson, 1987',
+    note: 'A closed curve with no crossings rounds off to a point',
+    runs: () => geometry.shortening(),
+    axes: false,
+    weight: 1.1,
+    kind: 'geometry',
+  },
+  {
+    name: 'Recamán’s sequence',
+    lines: [`${i('a')}${sub(n)} = ${i('a')}${sub(`${n}−1`)} ± ${n}`],
+    credit: 'Bernardo Recamán Santos, 1991',
+    note: 'Back n if that is new and positive, otherwise forward',
+    runs: () => recaman(65),
+    axes: false,
+    weight: 1.1,
+    kind: 'number',
   },
   {
     name: 'Elliptic curve 37a',
@@ -1025,6 +1365,18 @@ export const curves: Curve[] = [
     span: 12,
     weight: 1.6,
     kind: 'number',
+  },
+  {
+    name: 'Moth I orbit',
+    lines: ['Three equal masses,', 'three paths'],
+    credit: 'Šuvakov and Dmitrašinović, 2013',
+    note: 'One of thirteen new orbits reported that year',
+    runs: () => {
+      const path = moth().filter((_, c) => c % 3 === 0);
+      return [0, 1, 2].map((body) => path.map((s): Point => [s[2 * body], s[2 * body + 1]]));
+    },
+    axes: false,
+    kind: 'dynamics',
   },
   {
     name: 'Mystery curve',

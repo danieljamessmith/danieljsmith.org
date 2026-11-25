@@ -175,8 +175,8 @@
     gap: 12px 20px;
     padding-top: 14px;
   }
-  /* Room for five lines, so the page keeps still from one figure to the next. */
-  .plate-caption { flex: 1 1 210px; min-width: 0; min-height: 108px; font-family: var(--serif); line-height: 1.45; }
+  /* Room for five lines, two of them the name, so the page keeps still from one figure to the next. */
+  .plate-caption { flex: 1 1 210px; min-width: 0; min-height: 110px; font-family: var(--serif); line-height: 1.45; }
   .plate-name { display: block; color: rgb(var(--ink)); font-size: 16.5px; }
   /* The figure number, as a textbook sets it. */
   .plate-fig { margin-right: 6px; font-family: "LM Head", Georgia, Cambria, serif; font-weight: 700; }
